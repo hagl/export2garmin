@@ -1,15 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+if [[ -n "$XDG_CONFIG_DIR" ]]; then
+	config_file="$XDG_CONFIG_DIR/export2garmin/export2garmin.cfg"
+else
+	config_file="$HOME/.config/export2garmin/export2garmin.cfg"
+fi
 
 # Version Info
 echo -e "\n============================================="
 echo -e "Export 2 Garmin Connect v3.5 (import_data.sh)"
 echo -e "=============================================\n"
-
+# set -x
 # Blocking multiple instances of same script process
 path=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-source <(grep switch_ $path/user/export2garmin.cfg)
+source <(grep switch_ $config_file)
 timenow() { date +%d.%m.%Y-%H:%M:%S; }
-if lockfile -r 0 "$switch_temp_path/import.lock" 2>/dev/null ; then
+# if lockfile -r 0 "$switch_temp_path/import.lock" 2>/dev/null ; then
+if lockfile -r 0 "$switch_temp_path/import.lock" ; then
 	echo $BASHPID > "$switch_temp_path/import.pid"
 	trap 'rm -f "$switch_temp_path/import.lock" "$switch_temp_path/import.pid"' EXIT
 	import_pid=$(cat "$switch_temp_path/import.pid" 2>/dev/null)
@@ -29,7 +36,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 	# Print location of variables for PID, temp and user files
 	echo "$(timenow) SYSTEM * Main process runs on PID: $import_pid"
 	echo "$(timenow) SYSTEM * Path to temp files: $switch_temp_path/"
-	echo "$(timenow) SYSTEM * Path to user files: $path/user/"
+	echo "$(timenow) SYSTEM * Path to user files: ~/.config/export2garmin/"
 
 	# Restart WiFi if it crashed
 	if [[ $switch_wifi_watchdog == "on" ]] ; then
@@ -73,7 +80,11 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 
 	# Mi Body Composition Scale 2 & Xiaomi Body Composition Scale S400
 	if [[ $switch_miscale == "on" ]] || [[ $switch_s400 == "on" ]] ; then
-		miscale_backup=$path/user/miscale_backup.csv
+		if [[ -n "$XDG_DATA_HOME" ]]; then
+			miscale_backup="$XDG_DATA_HOME/export2garmin/miscale_backup.csv"
+		else
+			miscale_backup="$HOME/.local/share/export2garmin/miscale_backup.csv"
+		fi
 		echo "$(timenow) MISCALE|S400 * Module is ON in export2garmin.cfg file"
 
 		# Creating $miscale_backup file
@@ -88,7 +99,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 
 		# Importing raw data from MQTT (Mi Body Composition Scale 2)
 		if [[ $switch_mqtt == "on" && $switch_s400 == "off" ]] ; then
-			source <(grep miscale_mqtt_ $path/user/export2garmin.cfg)
+			source <(grep miscale_mqtt_ $config_file)
 			echo "$(timenow) MISCALE|S400 * Importing data from an MQTT broker"
 			miscale_read=$(mosquitto_sub -h localhost -t 'data' -u "$miscale_mqtt_user" -P "$miscale_mqtt_passwd" -C 1 -W 10)
 			miscale_unixtime=${miscale_read%%;*}
@@ -129,7 +140,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 
 					# Verifying correct working of BLE, restart bluetooth service and device via miscale_ble.py
 					unset $(compgen -v | grep '^ble_')
-					source <(grep s400_arg_ $path/user/export2garmin.cfg)
+					source <(grep s400_arg_ $config_file)
 					echo "$(timenow) S400 * A seperate BLE adapter is ON in export2garmin.cfg file, check if available"
 					ble_check=$(python3 -B $path/miscale/miscale_ble.py -a $s400_arg_hci -bt $s400_arg_hci2mac -mac $s400_arg_mac)
 					if [[ $ble_check == *"failed"* ]] ; then
@@ -158,7 +169,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 		# Check time synchronization between scale and OS (Mi Body Composition Scale 2)
 		if [[ $switch_miscale == "on" && $switch_s400 == "off" ]] || [[ $switch_mqtt == "on" && $switch_s400 == "off" ]] ; then
 			if [[ -n $miscale_unixtime ]] ; then
-				source <(grep miscale_time_ $path/user/export2garmin.cfg)
+				source <(grep miscale_time_ $config_file)
 				miscale_os_unixtime=$(date +%s)
 				miscale_time_zone=$(printf '%.3s' "$(date +%z)")
 				miscale_offset_unixtime=$(( $miscale_unixtime + $miscale_time_zone * 3600 + $miscale_time_offset ))
@@ -237,7 +248,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 
 	# Omron blood pressure
 	if [[ $switch_omron == "on" ]] ; then
-		omron_backup=$path/user/omron_backup.csv
+		omron_backup=~/.config/export2garmin/omron_backup.csv
 		echo "$(timenow) OMRON * Module is ON in export2garmin.cfg file"
 
 		# Creating omron_backup file
@@ -252,7 +263,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 			echo "$(timenow) OMRON * Importing data from a BLE adapter"
 			coproc ble { bluetoothctl; }
 			while true ; do
-				source <(grep omron_omblepy_ $path/user/export2garmin.cfg)
+				source <(grep omron_omblepy_ $config_file)
 				[[ $ble_check =~ (hci[0-9]+) ]] && omron_hci=${BASH_REMATCH[1]}
 				omron_omblepy_check=$(timeout ${omron_omblepy_time}s python3 -B $path/omron/omblepy.py -a $omron_hci -p -d $omron_omblepy_model 2> /dev/null)
 				if [[ $omron_omblepy_check == *"$omron_omblepy_mac"* ]] ; then
@@ -275,7 +286,7 @@ while [[ $loop_count -eq 0 ]] || [[ $i -lt $loop_count ]] ; do
 				fi
 			done
 			if [[ -f "$switch_temp_path/omron_user1.csv" ]] || [[ -f "$switch_temp_path/omron_user2.csv" ]] ; then
-				source <(grep omron_export_user $path/user/export2garmin.cfg)
+				source <(grep omron_export_user $config_file)
 				echo "$(timenow) OMRON * Prepare data for omron_backup.csv file"
 				awk -F ';' 'NR==FNR{a[$2];next}!($2 in a)' $omron_backup $switch_temp_path/omron_user1.csv > $switch_temp_path/omron_users.csv
 				awk -F ';' 'NR==FNR{a[$2];next}!($2 in a)' $omron_backup $switch_temp_path/omron_user2.csv >> $switch_temp_path/omron_users.csv

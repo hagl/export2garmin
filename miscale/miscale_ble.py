@@ -6,6 +6,10 @@ import argparse
 import time
 from datetime import datetime as dt
 from bluepy import btle
+from platform import os
+
+config_base_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(os.getenv("HOME"), ".config"))
+config_dir = os.path.join(config_base_dir, "export2garmin")
 
 # Version info
 print("""
@@ -16,7 +20,7 @@ Export 2 Garmin Connect v3.5 (miscale_ble.py)
 
 # Importing bluetooth variables from a file
 path = os.path.dirname(os.path.dirname(__file__))
-with open(path + '/user/export2garmin.cfg', 'r') as file:
+with open(os.path.join(config_dir, 'export2garmin.cfg'), 'r') as file:
     for line in file:
         line = line.strip()
         if line.startswith('ble_') or line.startswith('switch_'):

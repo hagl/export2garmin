@@ -11,6 +11,10 @@ from datetime import datetime
 from bleak import BleakScanner
 from xiaomi_ble.parser import XiaomiBluetoothDeviceData
 from bluetooth_sensor_state_data import BluetoothServiceInfo
+from platform import os
+
+config_base_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(os.getenv("HOME"), ".config"))
+config_dir = os.path.join(config_base_dir, "export2garmin")
 
 # Handling print function in BrokenPipeError exception
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
@@ -28,7 +32,7 @@ Export 2 Garmin Connect v3.5 (s400_ble.py)
 
 # Importing bluetooth variables from a file
 path = os.path.dirname(os.path.dirname(__file__))
-with open(path + '/user/export2garmin.cfg', 'r') as file:
+with open(os.path.join(config_dir, 'export2garmin.cfg'), 'r') as file:
     for line in file:
         line = line.strip()
         if line.startswith('ble_miscale_') or line.startswith('ble_arg_hci'):

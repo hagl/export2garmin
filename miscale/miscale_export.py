@@ -5,6 +5,14 @@ import csv
 import Xiaomi_Scale_Body_Metrics
 from datetime import datetime as dt, date
 from garminconnect import Garmin
+from platform import os
+import requests
+
+config_base_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(os.getenv("HOME"), ".config"))
+config_dir = os.path.join(config_base_dir, "export2garmin")
+
+data_base_dir = os.getenv("XDG_DATA_HOME", os.path.join(os.getenv("HOME"), ".local/share"))
+data_dir = os.path.join(config_base_dir, "export2garmin")
 
 # Version info
 print("""
@@ -30,9 +38,9 @@ class User():
         return today.year - calc_date.year
 
 # Importing user variables from a file
-path = os.path.dirname(os.path.dirname(__file__))
+# path = os.path.dirname(os.path.dirname(__file__))
 users = []
-with open(path + '/user/export2garmin.cfg', 'r') as file:
+with open(os.path.join(config_dir, 'export2garmin.cfg'), 'r') as file:
     for line in file:
         line = line.strip()
         if line.startswith('miscale_export_'):
@@ -43,7 +51,7 @@ with open(path + '/user/export2garmin.cfg', 'r') as file:
             globals()[name.strip()] = value.strip()
 
 # Import data variables from a file
-with open(path + '/user/miscale_backup.csv', 'r') as csv_file:
+with open(os.path.join(data_dir, 'miscale_backup.csv'), 'r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=';')
     for row in csv_reader:
         if str(row[0]) in ["failed", "to_import"]:
@@ -82,8 +90,13 @@ if selected_user is not None and 'email@email.com' not in selected_user.email:
     print(f"MISCALE * Calculated data: {formatted_time};{weight:.1f};{bmi:.1f};{percent_fat:.1f};{muscle_mass:.1f};{bone_mass:.1f};{percent_hydration:.1f};{physique_rating:.0f};{visceral_fat_rating:.0f};{metabolic_age:.0f};{basal_met:.0f};{lib.getLBMCoefficient():.1f};{lib.getIdealWeight():.1f};{lib.getFatMassToIdeal()};{lib.getProteinPercentage():.1f};{miimpedance:.0f};{selected_user.email};{dt.now().strftime('%d.%m.%Y;%H:%M')}")
 
     # Login to Garmin Connect
-    with open(path + '/user/' + selected_user.email, 'r') as token_file:
-        tokenstore = token_file.read()
+    with open(os.path.join(config_dir, selected_user.email), 'r') as token_file:
+        filecontent =token_file.read()
+        lines = filecontent.splitlines()
+        tokenstore = lines[0]
+        topic = None
+        if len(lines) > 1:
+            topic = lines[1]
         garmin = Garmin()
         garmin.login(tokenstore)
 
@@ -92,6 +105,9 @@ if selected_user is not None and 'email@email.com' not in selected_user.email:
         if s400_pulse == 'on':
             garmin.set_blood_pressure(timestamp=dt.fromtimestamp(mitdatetime).isoformat(),diastolic=diastolic,systolic=systolic,pulse=pulse)
         print("MISCALE * Upload status: OK")
+        # send push notification
+        if topic is not None:
+            requests.post(f"https://ntfy.sh/{topic}", data=f"Sync successful: {weight}".encode(encoding='utf-8'))
 else:
 
     # Print to temp.log file
