@@ -10,7 +10,7 @@ fi
 echo -e "\n============================================="
 echo -e "Export 2 Garmin Connect v3.5 (import_data.sh)"
 echo -e "=============================================\n"
-# set -x
+set -x
 # Blocking multiple instances of same script process
 path=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 source <(grep switch_ $config_file)
