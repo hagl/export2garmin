@@ -12,7 +12,7 @@ config_base_dir = os.getenv("XDG_CONFIG_HOME", os.path.join(os.getenv("HOME"), "
 config_dir = os.path.join(config_base_dir, "export2garmin")
 
 data_base_dir = os.getenv("XDG_DATA_HOME", os.path.join(os.getenv("HOME"), ".local/share"))
-data_dir = os.path.join(config_base_dir, "export2garmin")
+data_dir = os.path.join(data_base_dir, "export2garmin")
 
 # Version info
 print("""
