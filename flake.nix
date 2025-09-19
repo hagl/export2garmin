@@ -33,7 +33,7 @@
             mkdir -p $out/bin
             cp -r miscale $out/bin
             cp import_data.sh $out/bin/_import_data.sh
-            printf "${pkgs.bashInteractive}/bin/bash $out/bin/_import_data.sh" > $out/bin/import_data.sh
+            printf "${pkgs.bashInteractive}/bin/bash $out/bin/_import_data.sh $@" > $out/bin/import_data.sh
             chmod +x $out/bin/import_data.sh
 
             wrapProgram $out/bin/import_data.sh \
