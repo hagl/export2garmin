@@ -45,8 +45,9 @@
                   procmail
                   bashInteractive
                   bc
-		  coreutils
-		  gnugrep
+                  coreutils
+                  gnugrep
+                  bluez
                 ]
               }:$out/bin
           '';
