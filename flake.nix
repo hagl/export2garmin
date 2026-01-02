@@ -12,7 +12,7 @@
           ps.requests
           ps.xiaomi-ble
         ]);
-      in {
+      in rec {
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
             procmail
@@ -28,9 +28,9 @@
           nativeBuildInputs = [ pkgs.makeWrapper ];
           src = ./.;
           buildInputs = with pkgs; [ python-with-deps ];
-	  meta = {
-		mainProgram = "import_data.sh";
-	  };
+          meta = {
+            mainProgram = "import_data.sh";
+          };
           installPhase = ''
             mkdir -p $out/bin
             cp -r miscale $out/bin
@@ -40,11 +40,13 @@
 
             wrapProgram $out/bin/import_data.sh \
               --prefix PATH : ${
-                pkgs.lib.makeBinPath [
+                with pkgs; lib.makeBinPath [
                   python-with-deps
-                  pkgs.procmail
-                  pkgs.bashInteractive
-                  pkgs.bc
+                  procmail
+                  bashInteractive
+                  bc
+		  coreutils
+		  gnugrep
                 ]
               }:$out/bin
           '';
