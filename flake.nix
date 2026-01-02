@@ -47,6 +47,8 @@
                   bc
                   coreutils
                   gnugrep
+                  gawk
+                  gnused
                   bluez
                 ]
               }:$out/bin
