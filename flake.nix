@@ -28,7 +28,9 @@
           nativeBuildInputs = [ pkgs.makeWrapper ];
           src = ./.;
           buildInputs = with pkgs; [ python-with-deps ];
-
+	  meta = {
+		mainProgram = "import_data.sh";
+	  };
           installPhase = ''
             mkdir -p $out/bin
             cp -r miscale $out/bin
